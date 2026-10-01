@@ -5,7 +5,7 @@
 ## Состояние репозитория на старте
 Репозиторий был пуст (нет frontend/backend/MongoDB/auth/Docker/OmniRoute), поэтому п. 61 ТЗ свёлся к выбору автономного TypeScript-пакета без зависимостей. Хранилища (jobs, cache, ledger, anchors) сейчас in-memory за узкими классами; при интеграции в Firmspace их заменяют на Mongo/Redis, а `tenantId` уже сквозной.
 
-## Реализовано (Phase 1–3 + ядро Phase 4)
+## Реализовано (Phase 1–7, в объёме ядра)
 | ТЗ | Модуль |
 |---|---|
 | §3–4 Model Registry, tiers из конфигурируемых порогов цены | `registry.ts`, `config.ts` |
@@ -19,17 +19,21 @@
 | §13, 32 Generation Plan / film-level оптимизатор, §40 savings | `planner.ts`, `ledger.ts` |
 | §15 Shot classifier (importance, required quality) | `classifier.ts` |
 | §27–29 Asset Library (версии, hash-дедуп, tenant/project, min quality), reuse-first, keyframe → image-to-video с откатом на text-to-video | `assets.ts`, `pipeline.ts` |
+| §9, 20, 63 VLM-оценщик (LLM-as-judge по кадрам, стоимость судьи учитывается), проверка continuity по сцене, `ModalityQa` (модальности без оценщика явно помечаются unverified) | `vlm.ts` |
+| §6 FFmpeg: нормализация, склейка, микс аудио, upscale (Lanczos), финальная проверка | `ffmpeg.ts` |
+| §43–44, 54, 63 Film Agent: идея → сценарий (LLM) → shots с importance/required quality/бюджетами → Generation Plan → одобрение (auto/semi-auto) → референсы → keyframe → видео → музыка → continuity → рендер → final QA | `film-agent.ts` |
 | §30, 53 result cache, no-duplicate jobs | `orchestrator.ts` |
 | §38–39, 58 GenerationTransaction, агрегаты, статистика моделей | `ledger.ts`, `stats.ts` |
 
 В коде нет имён моделей и цен: цены/качество/capabilities приходят из каталога метаданных (`MetadataCatalog`) или из реестра, tier выводится из порогов в `RouterConfig`. Модель без цены или без данных о качестве **отклоняется**, а не угадывается.
 
 ## НЕ реализовано (следующие фазы)
-- Реальный `QualityEvaluator` (VLM/метрики) — есть интерфейс и тестовая заглушка.
+- Continuity только отчитывается, не перегенерирует автоматически. Музыка и аудио не проверяются QA (unverified). Озвучка/SFX, AI-upscaler (сейчас Lanczos), режим MANUAL (выбор модели на shot есть через `modelLock`, UI нет).
+- Оценки VLM-судьи — мнение модели, а не эталон; калибровка на реальных данных не проводилась.
 - Хранилище Asset Library пока in-memory (интерфейс `AssetStore` готов под Mongo/MinIO); сам сценарий/storyboard/shot-planner агенты.
-- Audio/FFmpeg/upscale/сборка фильма, BullMQ-очереди, Mongo-схемы, secrets, admin panel, дашборд, docker-compose.
+- BullMQ-очереди (оркестрация сейчас последовательная в процессе), Mongo-схемы, secrets, admin panel, дашборд, docker-compose.
 - Cost Optimization Agent на LLM: роутер уже не умеет повышать budget/hardLimit (`authorizeIncrease` — только явно).
-- Приёмочный тест §63 на реальных API — требует развёрнутого OmniRoute и ключей.
+- Приёмочный тест §63 проверен только e2e на подставном провайдере с реальным FFmpeg (`test/film.test.ts`); на реальных API не запускался — нужны развёрнутый OmniRoute и ключи. Docker-compose для OmniRoute не добавлен намеренно: образ/конфиг не проверены.
 
 ## Допущения, требующие проверки
 - Форма запроса `/v1/videos/generations` (поля `duration`, `image` и т. п.) и ответа (`data[].url`, `usage.cost`) взята по OpenAI-конвенции, не сверена с задеплоенной версией OmniRoute. Переопределяется через `mapVideoBody` и др. Асинхронный polling видео не реализован.

@@ -16,3 +16,6 @@ export * from './orchestrator.ts';
 export * from './planner.ts';
 export * from './assets.ts';
 export * from './pipeline.ts';
+export * from './ffmpeg.ts';
+export * from './vlm.ts';
+export * from './film-agent.ts';

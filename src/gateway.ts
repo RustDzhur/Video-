@@ -152,7 +152,10 @@ export class OmniRouteAdapter implements GenerationProvider {
 
   async generateText(req: GenerationRequest): Promise<GenerationResult> {
     const t = Date.now();
-    const body = this.o.mapTextBody?.(req) ?? { model: req.model, messages: [{ role: 'user', content: req.prompt }], ...req.params };
+    const content = req.inputAssets?.length
+      ? [{ type: 'text', text: req.prompt }, ...req.inputAssets.map((u) => ({ type: 'image_url', image_url: { url: u } }))]
+      : req.prompt;
+    const body = this.o.mapTextBody?.(req) ?? { model: req.model, messages: [{ role: 'user', content }], ...req.params };
     const j = await this.call('POST', '/v1/chat/completions', body, req);
     const text = j.choices?.[0]?.message?.content;
     const r = this.parse(j, t);
