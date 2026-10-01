@@ -5,7 +5,7 @@
 ## Состояние репозитория на старте
 Репозиторий был пуст (нет frontend/backend/MongoDB/auth/Docker/OmniRoute), поэтому п. 61 ТЗ свёлся к выбору автономного TypeScript-пакета без зависимостей. Хранилища (jobs, cache, ledger, anchors) сейчас in-memory за узкими классами; при интеграции в Firmspace их заменяют на Mongo/Redis, а `tenantId` уже сквозной.
 
-## Реализовано (Phase 1–2 + ядро Phase 4)
+## Реализовано (Phase 1–3 + ядро Phase 4)
 | ТЗ | Модуль |
 |---|---|
 | §3–4 Model Registry, tiers из конфигурируемых порогов цены | `registry.ts`, `config.ts` |
@@ -18,6 +18,7 @@
 | §9–10 QA decision, max attempts per tier, escalation | `qa.ts`, `orchestrator.ts` |
 | §13, 32 Generation Plan / film-level оптимизатор, §40 savings | `planner.ts`, `ledger.ts` |
 | §15 Shot classifier (importance, required quality) | `classifier.ts` |
+| §27–29 Asset Library (версии, hash-дедуп, tenant/project, min quality), reuse-first, keyframe → image-to-video с откатом на text-to-video | `assets.ts`, `pipeline.ts` |
 | §30, 53 result cache, no-duplicate jobs | `orchestrator.ts` |
 | §38–39, 58 GenerationTransaction, агрегаты, статистика моделей | `ledger.ts`, `stats.ts` |
 
@@ -25,7 +26,7 @@
 
 ## НЕ реализовано (следующие фазы)
 - Реальный `QualityEvaluator` (VLM/метрики) — есть интерфейс и тестовая заглушка.
-- Asset Library / reuse-first (§28–29), Image→Video пайплайн (§27), сам сценарий/storyboard/shot-planner агенты.
+- Хранилище Asset Library пока in-memory (интерфейс `AssetStore` готов под Mongo/MinIO); сам сценарий/storyboard/shot-planner агенты.
 - Audio/FFmpeg/upscale/сборка фильма, BullMQ-очереди, Mongo-схемы, secrets, admin panel, дашборд, docker-compose.
 - Cost Optimization Agent на LLM: роутер уже не умеет повышать budget/hardLimit (`authorizeIncrease` — только явно).
 - Приёмочный тест §63 на реальных API — требует развёрнутого OmniRoute и ключей.
